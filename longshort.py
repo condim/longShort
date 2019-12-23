@@ -56,7 +56,7 @@ listaAcao = ['PETR4','PETR3','VALE3','BBAS3','ITUB4','ABEV3','AZUL4','ANIM3',
              'BTOW3','BIDI3','BBDC3','BRPR3','BRKM3','BRSR3','ELET3','CESP3',
              'ELPL3','ENGI3','ECOR3','FJTA3','GFSA3','GGBR3','GOLL4','ITSA3',
              'LIGT3','LAME3','RENT3','GOAU3','MRVE3','ODPV3','OIBR3','RADL3',
-             'ALPA3','SUZB3','TELB3','TOTS3','USIM3',]
+             'ALPA3','SUZB3','TELB3','TOTS3','USIM3']
 bdInput('create table corr (id numeric primary key)')
 def longShort(acao):
     print(acao)
