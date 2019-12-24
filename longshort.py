@@ -8,23 +8,47 @@ dia=hoje.strftime('%d')
 for i in range(1,13):
     if i < int(mes):
         download.urlretrieve('http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_M'+str(i).zfill(2)+ano+'.ZIP','COTAHIST_'+ano+str(i).zfill(2)+'00'+'.ZIP')
-        with zipfile.ZipFile('COTAHIST_'+ano+str(i).zfill(2)+'00'+'.ZIP', 'r') as zip_ref:
-            zip_ref.extractall('.')
+        zipall=zipfile.ZipFile('COTAHIST_'+ano+str(i).zfill(2)+'00'+'.ZIP','r')
+        zipintel=zipall.infolist()
+        for zip in zipintel:
+            zip.filename=ano+str(i).zfill(2)+'00'
+            zipall.extract(zip)
     else:
         download.urlretrieve('http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_M'+str(i).zfill(2)+str(int(ano)-1)+'.ZIP','COTAHIST_'+str(int(ano)-1)+str(i).zfill(2)+'00'+'.ZIP')
-        with zipfile.ZipFile('COTAHIST_'+str(int(ano)-1)+str(i).zfill(2)+'00'+'.ZIP', 'r') as zip_ref:
-            zip_ref.extractall('.')
+        zipall=zipfile.ZipFile('COTAHIST_'+str(int(ano)-1)+str(i).zfill(2)+'00'+'.ZIP','r')
+        zipintel=zipall.infolist()
+        for zip in zipintel:
+            zip.filename=str(int(ano)-1)+str(i).zfill(2)+'00'
+            zipall.extract(zip)
 for i in range(1,32):
     if i <= int(dia):
         try:
             download.urlretrieve('http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_D'+str(i).zfill(2)+mes+ano+'.ZIP','COTAHIST_'+ano+mes+str(i).zfill(2)+'.ZIP')
-            with zipfile.ZipFile('COTAHIST_'+ano+mes+str(i).zfill(2)+'.ZIP','r') as zip_ref:
-                zip_ref.extractall('.')
+            zipall=zipfile.ZipFile('COTAHIST_'+ano+mes+str(i).zfill(2)+'.ZIP','r')
+            zipintel=zipall.infolist()
+            for zip in zipintel:
+                zip.filename=ano+mes+str(i).zfill(2)
+                zipall.extract(zip)
         except:
             pass
+folder=os.listdir('.')
+for file in folder:
+    if file.endswith("ZIP"):
+        os.remove(file)
+folder=os.listdir('.')
+list(folder)
+folder2=[]
+for file in folder:
+    if file.isnumeric():
+        folder2.append(file)
+with open('historico.txt', 'w') as outfile:
+    for fname in sorted(folder2):
+        with open(fname) as infile:
+            for line in infile:
+                outfile.write(line)
+for file in folder2:
+    os.remove(file)
 
-
-'''
 conn = psycopg2.connect(user = "postgres",
                               password = "condim",
                               host = "localhost",
@@ -72,7 +96,7 @@ def bdSelect(command):
     conn.close()
     return(record)
 
-arquivo = 'COTAHIST_A2019.TXT'
+arquivo = 'historico.txt'
 filtro1 = [' ','1','2','3','4','5','6','7','8','9','0']
 listaAcao = ['PETR4','PETR3','VALE3','BBAS3','ITUB4','ABEV3','AZUL4','ANIM3',
              'BTOW3','BIDI3','BBDC3','BRPR3','BRKM3','BRSR3','ELET3','CESP3',
@@ -93,7 +117,7 @@ def longShort(acao):
             elif len(acao) == 6 and line[12:17] == acao[0:5] and acao[4] in filtro1:
                 bdInput("insert into "+acao+" (id,fechamento) values (nextval('"+acao+"_SEQ'),'"+str(float(line[109:121])/100)+"');")
     last = int(bdSelect("SELECT max(id) from "+acao+";")[0][0])
-    bdInput("alter table corr add column "+acao.lower()+" numeric;")
+    bdInput("alter table corr add column "+acao+" numeric;")
     for indice in range(1,last):
         valor1=float(bdSelect('select fechamento from '+acao+' where id ='+str(indice)+';')[0][0])
         valor2=float(bdSelect('select fechamento from '+acao+' where id >'+str(indice)+';')[0][0])
@@ -106,11 +130,10 @@ with ThreadPoolExecutor(max_workers=3) as executor:
 
 folder=os.listdir('.')
 for file in folder:
-    if file.endswith("ZIP") or file.endswith("TXT"):
+    if file.endswith("txt"):
         os.remove(file)
 
 print("correlacao de 247 periodos: \n"+str(bdPandas(247))+'\n')
 print("correlacao de 180 periodos: \n"+str(bdPandas(180))+'\n')
 print("correlacao de 90 periodos: \n"+str(bdPandas(90))+'\n')
 print("correlacao de 45 periodos: \n"+str(bdPandas(45))+'\n')
-'''
