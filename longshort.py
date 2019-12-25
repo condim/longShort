@@ -1,64 +1,66 @@
 import psycopg2, pandas, numpy as np, urllib.request as download, zipfile, os, datetime
 from concurrent.futures import ThreadPoolExecutor
 
-hoje=datetime.datetime.now()
-mes=hoje.strftime('%m')
-ano=hoje.strftime('%Y')
-dia=hoje.strftime('%d')
-for i in range(1,13):
-    if i < int(mes):
-        download.urlretrieve('http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_M'+str(i).zfill(2)+ano+'.ZIP','COTAHIST_'+ano+str(i).zfill(2)+'00'+'.ZIP')
-        zipall=zipfile.ZipFile('COTAHIST_'+ano+str(i).zfill(2)+'00'+'.ZIP','r')
-        zipintel=zipall.infolist()
-        for zip in zipintel:
-            zip.filename=ano+str(i).zfill(2)+'00'
-            zipall.extract(zip)
-    else:
-        download.urlretrieve('http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_M'+str(i).zfill(2)+str(int(ano)-1)+'.ZIP','COTAHIST_'+str(int(ano)-1)+str(i).zfill(2)+'00'+'.ZIP')
-        zipall=zipfile.ZipFile('COTAHIST_'+str(int(ano)-1)+str(i).zfill(2)+'00'+'.ZIP','r')
-        zipintel=zipall.infolist()
-        for zip in zipintel:
-            zip.filename=str(int(ano)-1)+str(i).zfill(2)+'00'
-            zipall.extract(zip)
-for i in range(1,32):
-    if i <= int(dia):
-        try:
-            download.urlretrieve('http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_D'+str(i).zfill(2)+mes+ano+'.ZIP','COTAHIST_'+ano+mes+str(i).zfill(2)+'.ZIP')
-            zipall=zipfile.ZipFile('COTAHIST_'+ano+mes+str(i).zfill(2)+'.ZIP','r')
+def dataDownload():
+    hoje=datetime.datetime.now()
+    mes=hoje.strftime('%m')
+    ano=hoje.strftime('%Y')
+    dia=hoje.strftime('%d')
+    for i in range(1,13):
+        if i < int(mes):
+            download.urlretrieve('http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_M'+str(i).zfill(2)+ano+'.ZIP','COTAHIST_'+ano+str(i).zfill(2)+'00'+'.ZIP')
+            zipall=zipfile.ZipFile('COTAHIST_'+ano+str(i).zfill(2)+'00'+'.ZIP','r')
             zipintel=zipall.infolist()
             for zip in zipintel:
-                zip.filename=ano+mes+str(i).zfill(2)
+                zip.filename=ano+str(i).zfill(2)+'00'
                 zipall.extract(zip)
-        except:
-            pass
-folder=os.listdir('.')
-for file in folder:
-    if file.endswith("ZIP"):
-        os.remove(file)
-folder=os.listdir('.')
-list(folder)
-folder2=[]
-for file in folder:
-    if file.isnumeric():
-        folder2.append(file)
-with open('historico.txt', 'w') as outfile:
-    for fname in sorted(folder2):
-        with open(fname) as infile:
-            for line in infile:
-                outfile.write(line)
-for file in folder2:
-    os.remove(file)
+        else:
+            download.urlretrieve('http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_M'+str(i).zfill(2)+str(int(ano)-1)+'.ZIP','COTAHIST_'+str(int(ano)-1)+str(i).zfill(2)+'00'+'.ZIP')
+            zipall=zipfile.ZipFile('COTAHIST_'+str(int(ano)-1)+str(i).zfill(2)+'00'+'.ZIP','r')
+            zipintel=zipall.infolist()
+            for zip in zipintel:
+                zip.filename=str(int(ano)-1)+str(i).zfill(2)+'00'
+                zipall.extract(zip)
+    for i in range(1,32):
+        if i <= int(dia):
+            try:
+                download.urlretrieve('http://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_D'+str(i).zfill(2)+mes+ano+'.ZIP','COTAHIST_'+ano+mes+str(i).zfill(2)+'.ZIP')
+                zipall=zipfile.ZipFile('COTAHIST_'+ano+mes+str(i).zfill(2)+'.ZIP','r')
+                zipintel=zipall.infolist()
+                for zip in zipintel:
+                    zip.filename=ano+mes+str(i).zfill(2)
+                    zipall.extract(zip)
+            except:
+                pass
 
-conn = psycopg2.connect(user = "postgres",
-                              password = "condim",
-                              host = "localhost",
-                              port = "5432")
-conn.autocommit = True
-cur = conn.cursor()
-cur.execute('DROP DATABASE bmf')
-cur.execute('CREATE DATABASE bmf')
-conn.commit()
-conn.close()
+def dataCleaner():
+    folder=os.listdir('.')
+    list(folder)
+    folder2=[]
+    for file in folder:
+        if file.isnumeric():
+            folder2.append(file)
+        elif file.endswith("ZIP"):
+            os.remove(file)
+    with open('historico.txt', 'w') as outfile:
+        for fname in sorted(folder2):
+            with open(fname) as infile:
+                for line in infile:
+                    outfile.write(line)
+    for file in folder2:
+        os.remove(file)
+
+def bdReset():
+    conn = psycopg2.connect(user = "postgres",
+                                  password = "condim",
+                                  host = "localhost",
+                                  port = "5432")
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute('DROP DATABASE bmf')
+    cur.execute('CREATE DATABASE bmf')
+    conn.commit()
+    conn.close()
 
 def bdPandas(n):
     conn = psycopg2.connect(user = "postgres",
@@ -71,6 +73,22 @@ def bdPandas(n):
     correlation2 = (correlation.where(np.triu(np.ones(correlation.shape), k=1).astype(np.bool))
            .stack()
            .sort_values(ascending=False)).head(5)
+    return correlation2
+
+def bdPandasSpec(spec,n):
+    conn = psycopg2.connect(user = "postgres",
+                              password = "condim",
+                              host = "localhost",
+                              port = "5432",
+                              database = "bmf")
+    correlation1 = pandas.read_sql('select * from corr order by id asc limit '+str(n)+';',conn,index_col='id')
+    correlation2 = correlation1.corrwith(correlation1[spec])
+    # print(correlation1)
+    # correlation=correlation1.corrwith(correlation1[spec]).abs()
+    # print(correlation)
+    # correlation2 = (correlation.where(np.triu(np.ones(correlation.shape[0],2))), k=1).astype(np.bool))
+    #        .stack()
+    #        .sort_values(ascending=False))
     return correlation2
 
 def bdInput(command):
@@ -132,8 +150,11 @@ folder=os.listdir('.')
 for file in folder:
     if file.endswith("txt"):
         os.remove(file)
-
+spec='itsa3'
+dataDownload()
+bdReset()
 print("correlacao de 247 periodos: \n"+str(bdPandas(247))+'\n')
 print("correlacao de 180 periodos: \n"+str(bdPandas(180))+'\n')
 print("correlacao de 90 periodos: \n"+str(bdPandas(90))+'\n')
 print("correlacao de 45 periodos: \n"+str(bdPandas(45))+'\n')
+print("correlacao de 247 periodos da "+spec+": \n"+str(bdPandasSpec(spec,247))+'\n')
