@@ -61,6 +61,7 @@ def bdReset():
     cur.execute('CREATE DATABASE bmf')
     conn.commit()
     conn.close()
+    bdInput('create table corr (id numeric primary key)')
 
 def bdPandas(n):
     conn = psycopg2.connect(user = "postgres",
@@ -82,13 +83,7 @@ def bdPandasSpec(spec,n):
                               port = "5432",
                               database = "bmf")
     correlation1 = pandas.read_sql('select * from corr order by id asc limit '+str(n)+';',conn,index_col='id')
-    correlation2 = correlation1.corrwith(correlation1[spec])
-    # print(correlation1)
-    # correlation=correlation1.corrwith(correlation1[spec]).abs()
-    # print(correlation)
-    # correlation2 = (correlation.where(np.triu(np.ones(correlation.shape[0],2))), k=1).astype(np.bool))
-    #        .stack()
-    #        .sort_values(ascending=False))
+    correlation2 = correlation1.corrwith(correlation1[spec]).sort_values(ascending=False)
     return correlation2
 
 def bdInput(command):
@@ -122,7 +117,6 @@ listaAcao = ['PETR4','PETR3','VALE3','BBAS3','ITUB4','ABEV3','AZUL4','ANIM3',
              'LIGT3','LAME3','RENT3','GOAU3','MRVE3','ODPV3','OIBR3','RADL3',
              'ALPA3','SUZB3','TELB3','TOTS3','USIM3','UNIP3','UGPA3','VVAR3',
              'TIET3','ALUP3','CIEL3','SBSP3','EMBR3','GRND3','HYPE3']
-bdInput('create table corr (id numeric primary key)')
 
 def longShort(acao):
     print("Carregando "+acao)
@@ -142,6 +136,9 @@ def longShort(acao):
         vari=str((valor1/valor2)-1)
         bdInput('insert into corr (id,'+acao+') values ('+str(indice)+','+vari+') on conflict on constraint corr_pkey do update set '+acao+' = '+vari+';')
     print("Terminado "+acao)
+dataDownload()
+dataCleaner()
+bdReset()
 
 with ThreadPoolExecutor(max_workers=3) as executor:
     executor.map(longShort,listaAcao)
@@ -151,8 +148,7 @@ for file in folder:
     if file.endswith("txt"):
         os.remove(file)
 spec='itsa3'
-dataDownload()
-bdReset()
+
 print("correlacao de 247 periodos: \n"+str(bdPandas(247))+'\n')
 print("correlacao de 180 periodos: \n"+str(bdPandas(180))+'\n')
 print("correlacao de 90 periodos: \n"+str(bdPandas(90))+'\n')
