@@ -73,7 +73,7 @@ def bdPandas(n):
     correlation=correlation1.corr().abs()
     correlation2 = (correlation.where(np.triu(np.ones(correlation.shape), k=1).astype(np.bool))
            .stack()
-           .sort_values(ascending=False)).head(5)
+           .sort_values(ascending=False)).head(10).to_string()
     return correlation2
 
 def bdPandasSpec(spec,n):
@@ -83,7 +83,7 @@ def bdPandasSpec(spec,n):
                               port = "5432",
                               database = "bmf")
     correlation1 = pandas.read_sql('select * from corr order by id asc limit '+str(n)+';',conn,index_col='id')
-    correlation2 = correlation1.corrwith(correlation1[spec]).sort_values(ascending=False)
+    correlation2 = correlation1.corrwith(correlation1[spec]).sort_values(ascending=False).to_string()
     return correlation2
 
 def bdInput(command):
@@ -116,7 +116,10 @@ listaAcao = ['PETR4','PETR3','VALE3','BBAS3','ITUB4','ABEV3','AZUL4','ANIM3',
              'ELPL3','ENGI3','ECOR3','FJTA3','GFSA3','GGBR3','GOLL4','ITSA3',
              'LIGT3','LAME3','RENT3','GOAU3','MRVE3','ODPV3','OIBR3','RADL3',
              'ALPA3','SUZB3','TELB3','TOTS3','USIM3','UNIP3','UGPA3','VVAR3',
-             'TIET3','ALUP3','CIEL3','SBSP3','EMBR3','GRND3','HYPE3']
+             'TIET3','ALUP3','CIEL3','SBSP3','EMBR3','GRND3','HYPE3','BBDC4',
+             'SANB3','TIET4','ITUB3','ALUP4','B3SA3','BIDI4','BMGB4','BPAN4',
+             'SANB4','BBDC3','BPAR3','BGIP3','BGIP4','BRML3','BRFS3','BBSE3',
+             'BPAC3','CEAB3','CRFB3','LCAM3','CSNA3','CPLE3','CCRO3','FJTA4']
 
 def longShort(acao):
     print("Carregando "+acao)
