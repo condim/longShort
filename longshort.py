@@ -1,6 +1,8 @@
 import psycopg2, pandas, numpy as np, urllib.request as download, zipfile, os, datetime
 from concurrent.futures import ThreadPoolExecutor
 
+#Download dos dados de todas as açoes da B3 do ultimo ano. Faz o download dos 12 meses anteriores,
+#download dos dias anteriores do mes atual e descompacta
 def dataDownload():
     hoje=datetime.datetime.now()
     mes=hoje.strftime('%m')
@@ -33,6 +35,7 @@ def dataDownload():
             except:
                 pass
 
+#como o dataDownload gera muitos arquivos, essa funcao junta-os em 1 unico arquivo e deleta o restante
 def dataCleaner():
     folder=os.listdir('.')
     list(folder)
@@ -50,6 +53,7 @@ def dataCleaner():
     for file in folder2:
         os.remove(file)
 
+#reseta o banco de dados para novo calculo
 def bdReset():
     conn = psycopg2.connect(user = "postgres",
                                   password = "condim",
@@ -63,6 +67,8 @@ def bdReset():
     conn.close()
     bdInput('create table corr (id numeric primary key)')
 
+#faz a correlaçao de todas açoes por todas as açoes inseridas e retorna as 10 maiores correlaçoes,
+#o argumento n passado e o numero de periodos que devem ser buscados
 def bdPandas(n):
     conn = psycopg2.connect(user = "postgres",
                               password = "condim",
@@ -76,6 +82,8 @@ def bdPandas(n):
            .sort_values(ascending=False)).head(10).to_string()
     return correlation2
 
+#Como o bdPandas(n) retorna as 10 melhores correlaçoes, essa funçao foi feita para buscar
+#todas as correlaçoes de uma dada acao pelo numero n de periodos
 def bdPandasSpec(spec,n):
     conn = psycopg2.connect(user = "postgres",
                               password = "condim",
@@ -86,6 +94,7 @@ def bdPandasSpec(spec,n):
     correlation2 = correlation1.corrwith(correlation1[spec]).sort_values(ascending=False).to_string()
     return correlation2
 
+#funcao para inserir dados no banco de dados
 def bdInput(command):
     conn = psycopg2.connect(user = "postgres",
                               password = "condim",
@@ -97,6 +106,7 @@ def bdInput(command):
     conn.commit()
     conn.close()
 
+#funcao para buscar dados no banco de dados
 def bdSelect(command):
     conn = psycopg2.connect(user = "postgres",
                               password = "condim",
@@ -109,8 +119,8 @@ def bdSelect(command):
     conn.close()
     return(record)
 
-arquivo = 'historico.txt'
-filtro1 = [' ','1','2','3','4','5','6','7','8','9','0']
+arquivo = 'historico.txt' #arquivo gerado pela funcao dataCleaner()
+filtro1 = [' ','1','2','3','4','5','6','7','8','9','0'] #filtro usado num if da funcao longShort(), nao mexer
 listaAcao = ['PETR4','PETR3','VALE3','BBAS3','ITUB4','ABEV3','AZUL4','ANIM3',
              'BTOW3','BIDI3','BBDC3','BRPR3','BRKM3','BRSR3','ELET3','CESP3',
              'ELPL3','ENGI3','ECOR3','FJTA3','GFSA3','GGBR3','GOLL4','ITSA3',
@@ -119,8 +129,12 @@ listaAcao = ['PETR4','PETR3','VALE3','BBAS3','ITUB4','ABEV3','AZUL4','ANIM3',
              'TIET3','ALUP3','CIEL3','SBSP3','EMBR3','GRND3','HYPE3','BBDC4',
              'SANB3','TIET4','ITUB3','ALUP4','B3SA3','BIDI4','BMGB4','BPAN4',
              'SANB4','BBDC3','BPAR3','BGIP3','BGIP4','BRML3','BRFS3','BBSE3',
-             'BPAC3','CEAB3','CRFB3','LCAM3','CSNA3','CPLE3','CCRO3','FJTA4']
+             'BPAC3','CEAB3','CRFB3','LCAM3','CSNA3','CPLE3','CCRO3','FJTA4'] # lista de acoes a serem calculadas
 
+#funcao que faz a insercao dos dados no banco de dados. Ela cria uma tabela e uma sequence para cada acao,
+#depois seleciona o fechamento D e D+1, e subtrai 1 para encontrarmos a variacao diaria. Essa variacao diaria entao e inserida
+#numa tabela de correlacao. Essa tabela de correlacao possui uma coluna index e uma coluna para cada acao. Na coluna de cada acao
+#sao inseridos as variacoes diarias.
 def longShort(acao):
     print("Carregando "+acao)
     bdInput('create table '+acao+' ( id smallint,fechamento numeric,variacao numeric)')
