@@ -153,21 +153,21 @@ def longShort(acao):
         vari=str((valor1/valor2)-1)
         bdInput('insert into corr (id,'+acao+') values ('+str(indice)+','+vari+') on conflict on constraint corr_pkey do update set '+acao+' = '+vari+';')
     print("Terminado "+acao)
-dataDownload()
-dataCleaner()
-bdReset()
+# dataDownload()
+# dataCleaner()
+# bdReset()
 
-with ThreadPoolExecutor(max_workers=3) as executor:
-    executor.map(longShort,listaAcao)
+# with ThreadPoolExecutor(max_workers=3) as executor:
+#     executor.map(longShort,listaAcao)
 
-folder=os.listdir('.')
-for file in folder:
-    if file.endswith("txt"):
-        os.remove(file)
-spec='itsa3'
+# folder=os.listdir('.')
+# for file in folder:
+#     if file.endswith("txt"):
+#         os.remove(file)
+spec='ecor3'
 
-print("correlacao de 247 periodos: \n"+str(bdPandas(247))+'\n')
-print("correlacao de 180 periodos: \n"+str(bdPandas(180))+'\n')
-print("correlacao de 90 periodos: \n"+str(bdPandas(90))+'\n')
-print("correlacao de 45 periodos: \n"+str(bdPandas(45))+'\n')
+# print("correlacao de 247 periodos: \n"+str(bdPandas(247))+'\n')
+# print("correlacao de 180 periodos: \n"+str(bdPandas(180))+'\n')
+# print("correlacao de 90 periodos: \n"+str(bdPandas(90))+'\n')
+# print("correlacao de 45 periodos: \n"+str(bdPandas(45))+'\n')
 print("correlacao de 247 periodos da "+spec+": \n"+str(bdPandasSpec(spec,247))+'\n')
